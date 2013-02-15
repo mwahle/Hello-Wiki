@@ -1,0 +1,69 @@
+This Java library opens a Wikipedia dump in form of an XML file and extracts the
+content of the individual articles. Content refers to the article text, a list
+of the links to other Wikipedia articles and more. It can also create a Lucene
+index, adding the article contents into different fields.
+
+Copyright 2011 Manuel Wahle
+
+This file is part of Hello-Wiki.
+
+    Hello-Wiki is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Hello-Wiki is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Hello-Wiki.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Experimenting with new random indexing methods and information retrieval
+methods, the Wikipedia corpus turned out to be an intuitive base for
+experiments. But I couldn't really find a tool that would extract the textual
+information (stripped of all wiki markup) from the Wikipedia articles. So I
+wrote a Java program, intended to be used as a library, to do this job.
+
+
+Right now, there are two Java classes:
+* Extractor.java, which does the actual job of loading and parsing the dump
+  file and extracting the articles
+* MakeLuceneIndex.java, which uses the Extractor to walk through the complete
+  dump file and puts the contents into a Lucene index
+
+
+The regular expressions that strip the wiki markup code are not exactly perfect
+but were good enough for my purposes. I'm inviting anybody to use this project
+and I'll happily include any improvements. Special thanks go to rvedam for
+contributing the build.xml and getting me started on Java development.
+
+
+
+Dependencies:
+
+Currently, this project depends on the following libraries:
+* Apache Lucene (currently version 3.0). You can download the Lucene library at
+  http://www.apache.org/dyn/closer.cgi/lucene/java/
+
+
+Compilation Instructions:
+
+1) download Apache Lucene 3.0.3 and copy the file lucene-core-3.0.3.jar into the
+   lib directory
+
+2) run "ant" on the top level without arguments. The output from ant will be a
+   jar located in the build/jar directory
+
+3) run the jar with "ant run". Currently, you'll have to hard code the location
+   of the wikidump file and the Lucene index in MakeLuceneIndex.java. An
+   unzipped wikidump file from 2011-04-05 (enwiki-20110405-pages-articles.xml)
+   is expected in the current working directory and this is also where the
+   Lucene index will be created
+
+Optional:
+
+4) run "ant doc" to create a doc directory containing the Javadoc API
+   documentation in the doc/ directory
