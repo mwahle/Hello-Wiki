@@ -1,8 +1,3 @@
-This Java library opens a Wikipedia dump in form of an XML file and extracts the
-content of the individual articles. Content refers to the article text, a list
-of the links to other Wikipedia articles and more. It can also create a Lucene
-index, adding the article contents into different fields.
-
 Copyright 2011 Manuel Wahle
 
 This file is part of Hello-Wiki.
