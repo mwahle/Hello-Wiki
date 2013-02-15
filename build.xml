@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<!-- Copyright 2011 Manuel Wahle
+ !
+ ! This file is part of Hello-Wiki.
+ !
+ !    Hello-Wiki is free software: you can redistribute it and/or modify
+ !    it under the terms of the GNU General Public License as published by
+ !    the Free Software Foundation, either version 3 of the License, or
+ !    (at your option) any later version.
+ !
+ !    Hello-Wiki is distributed in the hope that it will be useful,
+ !    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ !    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ !    GNU General Public License for more details.
+ !
+ !    You should have received a copy of the GNU General Public License
+ !    along with Hello-Wiki.  If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<project name="Hello-Wiki" basedir="." default="main">
+	<!-- paths to all major locations(srcdir, builddir, etc.) -->
+	<property name="src.dir" value="src" />
+	<property name="lib.dir" value="lib" />
+	<property name="build.dir" value="build" />
+	<property name="classes.dir" value="${build.dir}/classes" />
+	<property name="jar.dir" value="${build.dir}/jar" />
+	<property name="doc.dir" value="doc" />
+
+	<!-- setting up our classpath -->
+	<path id="classpath">
+		<fileset dir="${lib.dir}" includes="**/*.jar" />
+	</path>
+
+	<!-- default main class for wikidump project -->
+	<property name="main-class" value="mw.wikidump.MakeLuceneIndex"/>
+
+	<!-- rule for cleaning project -->
+	<target name="clean" description="Cleans project class files and jars generated">
+		<delete dir="${build.dir}" />
+	</target>
+
+	<!-- rule building project (mainly generating classes files) -->
+	<target name="compile" description="compiles the project">
+		<mkdir dir="${classes.dir}" />
+		<javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" includeantruntime="false"/>
+	</target>
+
+	<!-- rule for building library -->
+	<target name="jar" depends="compile" description="generates a jar file with all classes">
+		<mkdir dir="${jar.dir}" />
+		<jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${main-class}"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<!-- rule for running application -->
+	<target name="run">
+		<java fork="true" classname="${main-class}">
+			<classpath>
+				<path refid="classpath" />
+				<path location="${jar.dir}/${ant.project.name}.jar"/>
+			</classpath>
+		</java>
+	</target>
+	
+	<!-- rule for creating html javadoc -->
+	<target name="doc">
+	  <javadoc
+	      access="public"
+	      destdir="${doc.dir}"
+	      author="false"
+	      windowtitle="Wikidump API Documentation"
+	      >
+	    <link href="http://download.oracle.com/javase/6/docs/api/"/>
+	    <fileset dir="${src.dir}" defaultexcludes="yes">
+	      <include name="**/*.java"/>
+	    </fileset>
+	  </javadoc>
+	</target>
+
+	<!-- default ant rule -->
+	<target name="main" depends="clean, jar" >
+	</target>
+</project>
+
