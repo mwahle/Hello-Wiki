@@ -44,21 +44,6 @@ Currently, this project depends on the following libraries:
   http://www.apache.org/dyn/closer.cgi/lucene/java/
 
 
-Compilation Instructions:
+Compilation Instructions (changed from MWahle's original instructions):
 
-1) download Apache Lucene 3.0.3 and copy the file lucene-core-3.0.3.jar into the
-   lib directory
-
-2) run "ant" on the top level without arguments. The output from ant will be a
-   jar located in the build/jar directory
-
-3) run the jar with "ant run". Currently, you'll have to hard code the location
-   of the wikidump file and the Lucene index in MakeLuceneIndex.java. An
-   unzipped wikidump file from 2011-04-05 (enwiki-20110405-pages-articles.xml)
-   is expected in the current working directory and this is also where the
-   Lucene index will be created
-
-Optional:
-
-4) run "ant doc" to create a doc directory containing the Javadoc API
-   documentation in the doc/ directory
+- Run "mvn clean install" in the root directory and inform dwiddows if there are problems.

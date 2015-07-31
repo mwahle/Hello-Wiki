@@ -748,7 +748,7 @@ public class Extractor {
      * With <code>setTitleSeparator</code> the String that separates words within a title is set. This is by default "_" so the title can be used as a unique
      * identifier for an article. It may however sometimes be useful to use another character like a whitespace.
      * 
-     * @param a <code>String</code> containing the title separator
+     * @param titleSeparator a <code>String</code> containing the title separator
      */
     public void setTitleSeparator(String titleSeparator) {
         _titleSeparator = titleSeparator;
@@ -767,7 +767,7 @@ public class Extractor {
      * With <code>setCategorySeparator</code> the String that separates words within a category is set. This is by default "_" so the category can be used as a
      * unique identifier for a category. It may however sometimes be useful to use another character like a whitespace.
      * 
-     * @param a <code>String</code> containing the category separator
+     * @param categorySeparator a <code>String</code> containing the category separator
      */
     public void setCategorySeparator(String categorySeparator) {
         _categorySeparator = categorySeparator;
@@ -787,7 +787,7 @@ public class Extractor {
      * string) is set. This is by default a whitespace. The String should be chosen with care as to not cause unwanted effects with the way that the words
      * inside a category string are separated.
      * 
-     * @param a <code>String</code> containing the string that separates categories from each other when returned as a single string
+     * @param categoryListSeparator a <code>String</code> containing the string that separates categories from each other when returned as a single string
      */
     public void setCategoryListSeparator(String categoryListSeparator) {
         _categoryListSeparator = categoryListSeparator;
@@ -806,7 +806,7 @@ public class Extractor {
      * With <code>setLinkSeparator</code> the String that separates words within a link is set. This is by default "_" so the link can be used as a unique
      * identifier for a link. It may however sometimes be useful to use another character like a whitespace.
      * 
-     * @param a <code>String</code> containing the link separator
+     * @param linkSeparator a <code>String</code> containing the link separator
      */
     public void setLinkSeparator(String linkSeparator) {
         _linkSeparator = linkSeparator;

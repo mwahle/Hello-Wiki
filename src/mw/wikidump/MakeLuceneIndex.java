@@ -21,19 +21,23 @@ package mw.wikidump;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.util.HashMap;
+import java.util.Map;
 
 import mw.utils.NanoTimeFormatter;
 import mw.utils.PlainLogger;
 
-import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
 
 /**
@@ -75,10 +79,12 @@ public class MakeLuceneIndex
         }
 
 
-        PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper( new WhitespaceAnalyzer( ) );
-        analyzer.addAnalyzer( "tokenized_title", new StandardAnalyzer( Version.LUCENE_30 ) );
-        analyzer.addAnalyzer( "contents", new StandardAnalyzer( Version.LUCENE_30 ) );
+        Map<String,Analyzer> analyzerPerField = new HashMap<>();
+        analyzerPerField.put("tokenized_title", new StandardAnalyzer() );
+        analyzerPerField.put("contents", new StandardAnalyzer());
 
+        PerFieldAnalyzerWrapper analyzer =
+            new PerFieldAnalyzerWrapper(new StandardAnalyzer(), analyzerPerField);
 
         File basePath = new File( baseDir );
         File luceneIndex = new File( basePath.getCanonicalPath() + File.separator + luceneIndexName );
@@ -102,9 +108,8 @@ public class MakeLuceneIndex
 
 
         // create the index
-        Directory indexDirectory = new MMapDirectory( luceneIndex, org.apache.lucene.store.NoLockFactory.getNoLockFactory() );
-        IndexWriter indexWriter = new IndexWriter( indexDirectory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED );
-
+        Directory indexDirectory = FSDirectory.open(FileSystems.getDefault().getPath(baseDir));
+        IndexWriter indexWriter = new IndexWriter(indexDirectory, new IndexWriterConfig(analyzer));
 
         Extractor wikidumpExtractor = new Extractor( basePath.getCanonicalPath() + File.separator + wikiDumpFile );
         wikidumpExtractor.setLinkSeparator( "_" );
@@ -174,11 +179,6 @@ public class MakeLuceneIndex
         logger.add( "skipped " + iSkippedPageCount + " nonarticle pages," );
         logger.log( "skipped " + iStubs + " stubs." );
         logger.log( "" );
-
-        iTime = System.nanoTime();
-        logger.add( "Optimizing... " );
-        indexWriter.optimize();
-        logger.add( "done in " + NanoTimeFormatter.getS( System.nanoTime() - iTime ) + "s," );
 
         iTime = System.nanoTime();
         logger.add( " closing..." );
