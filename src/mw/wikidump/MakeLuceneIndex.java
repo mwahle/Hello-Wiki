@@ -34,6 +34,9 @@ import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -121,6 +124,12 @@ public class MakeLuceneIndex
         long iStartTime = java.lang.System.nanoTime();
         long iTime = iStartTime;
 
+        FieldType fieldType = new FieldType();
+        fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+        fieldType.setTokenized(true);
+        fieldType.setStoreTermVectors(true);
+        fieldType.setStoreTermVectorPositions(true);
+
         while ( wikidumpExtractor.nextPage() )
         {
             if ( wikidumpExtractor.getPageType() != Extractor.PageType.ARTICLE )
@@ -138,16 +147,18 @@ public class MakeLuceneIndex
             Document doc = new Document();
             ++iArticleCount;
 
-
+            doc.add(new StoredField("path", String.format("%d", iArticleCount)));
+            
             wikidumpExtractor.setTitleSeparator( "_" );
-            doc.add( new Field( "title", wikidumpExtractor.getPageTitle( false ).toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
+            String title = wikidumpExtractor.getPageTitle( false ).toLowerCase();
+            doc.add( new Field( "title", title, fieldType) );
 
             wikidumpExtractor.setTitleSeparator( " " );
-            doc.add( new Field( "tokenized_title", wikidumpExtractor.getPageTitle( false ).toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
+            doc.add( new Field( "tokenized_title", wikidumpExtractor.getPageTitle( false ).toLowerCase(), fieldType ) );
 
-            doc.add( new Field( "categories", wikidumpExtractor.getPageCategories().toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
-            doc.add( new Field( "links", wikidumpExtractor.getPageLinks().toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
-            doc.add( new Field( "contents", wikidumpExtractor.getPageAbstract().toLowerCase(), Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES ) );
+            doc.add( new Field( "categories", wikidumpExtractor.getPageCategories().toLowerCase(), fieldType ) );
+            doc.add( new Field( "links", wikidumpExtractor.getPageLinks().toLowerCase(), fieldType ) );
+            doc.add( new Field( "contents", wikidumpExtractor.getPageAbstract().toLowerCase(), fieldType ) );
 
 
             indexWriter.addDocument( doc );

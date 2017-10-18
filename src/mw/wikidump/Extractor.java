@@ -370,7 +370,7 @@ public class Extractor {
      * the cached title will be returned only (note: immediately after calling <code>nextPage</code>, this cache is empty), saving some redundant
      * calculations. <p>
      *
-     * Words withing the title are separated by default with an underscore. This is handy if the title should serve as a unique identifier. However, it may be
+     * Words within the title are separated by default with an underscore. This is handy if the title should serve as a unique identifier. However, it may be
      * desirable to use another separator. {@link #setTitleSeparator(String)} and {@link #getTitleSeparator()} allow to set and query the current separator.
      * 
      * @param bExtract if true, the title is extracted from the page source, and cleaned and cached before returned. If false, the cached title will be returned

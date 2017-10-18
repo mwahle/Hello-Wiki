@@ -15,7 +15,7 @@
     </parent>
     
     <properties>
-        <luceneversion>5.2.1</luceneversion>
+        <luceneversion>6.6.0</luceneversion>
         <!-- Override using "mvn install -DskipTests=false". -->
         <skipTests>true</skipTests>
         <attachDependencySources>false</attachDependencySources>
