@@ -40,7 +40,7 @@ contributing the build.xml and getting me started on Java development.
 Dependencies:
 
 Currently, this project depends on the following libraries:
-* Apache Lucene (currently version 3.0). You can download the Lucene library at
+* Apache Lucene (currently version 6.6.0). You can download the Lucene library at
   http://www.apache.org/dyn/closer.cgi/lucene/java/
 
 
