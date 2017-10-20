@@ -19,8 +19,7 @@
 package mw.wikidump;
 
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileSystems;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +29,6 @@ import mw.utils.PlainLogger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,7 +39,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.store.*;
-import org.apache.lucene.util.Version;
 
 /**
  * @author mwahle
@@ -62,6 +59,7 @@ public class MakeLuceneIndex
         String luceneIndexName = "enwiki-20110405-lucene";
         String logFile = luceneIndexName + ".log";
         boolean bIgnoreStubs = false;
+        String writeToTextFilesDir = "";
 
         for ( int i = 0; i < args.length; ++i )
         {
@@ -79,6 +77,10 @@ public class MakeLuceneIndex
 
             if ( args[i].equals( "-ignorestubs" ) )
                 bIgnoreStubs = true;
+
+            if ( args[i].equals( "-writetotextfilesdir" )) {
+                writeToTextFilesDir = args[++i];
+            }
         }
 
 
@@ -148,7 +150,7 @@ public class MakeLuceneIndex
             ++iArticleCount;
 
             doc.add(new StoredField("path", String.format("%d", iArticleCount)));
-            
+
             wikidumpExtractor.setTitleSeparator( "_" );
             String title = wikidumpExtractor.getPageTitle( false ).toLowerCase();
             doc.add( new Field( "title", title, fieldType) );
@@ -160,8 +162,13 @@ public class MakeLuceneIndex
             doc.add( new Field( "links", wikidumpExtractor.getPageLinks().toLowerCase(), fieldType ) );
             doc.add( new Field( "contents", wikidumpExtractor.getPageAbstract().toLowerCase(), fieldType ) );
 
-
             indexWriter.addDocument( doc );
+
+            if (!writeToTextFilesDir.isEmpty()) {
+                String fileName = doc.get("title");
+                fileName = fileName.replace('/', '_');
+                writeToTextFile(writeToTextFilesDir, fileName, doc.get("contents"));
+            }
 
             if ( iArticleCount % 50000 == 0 )
             {
@@ -198,5 +205,19 @@ public class MakeLuceneIndex
 
         logger.close();
         System.exit( 0 );
+    }
+
+    static void writeToTextFile(String dirName, String fileName, String contents) throws IOException {
+        File dir = new File(dirName);
+        if (!dir.exists()) {
+            dir.mkdir();
+        } else if (!dir.isDirectory()) {
+            throw new IOException(String.format("'%s' exists and is not a directory.", dirName));
+        } else {
+            Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(String.format("%s/%s", dirName, fileName)), "utf-8"));
+            writer.write(contents);
+            writer.close();
+        }
     }
 }
