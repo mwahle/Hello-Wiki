@@ -19,22 +19,26 @@
 package mw.wikidump;
 
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.FileSystems;
+import java.util.HashMap;
+import java.util.Map;
 
 import mw.utils.NanoTimeFormatter;
 import mw.utils.PlainLogger;
 
-import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.store.*;
 
 /**
  * @author mwahle
@@ -55,6 +59,7 @@ public class MakeLuceneIndex
         String luceneIndexName = "enwiki-20110405-lucene";
         String logFile = luceneIndexName + ".log";
         boolean bIgnoreStubs = false;
+        String writeToTextFilesDir = "";
 
         for ( int i = 0; i < args.length; ++i )
         {
@@ -72,13 +77,19 @@ public class MakeLuceneIndex
 
             if ( args[i].equals( "-ignorestubs" ) )
                 bIgnoreStubs = true;
+
+            if ( args[i].equals( "-writetotextfilesdir" )) {
+                writeToTextFilesDir = args[++i];
+            }
         }
 
 
-        PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper( new WhitespaceAnalyzer( ) );
-        analyzer.addAnalyzer( "tokenized_title", new StandardAnalyzer( Version.LUCENE_30 ) );
-        analyzer.addAnalyzer( "contents", new StandardAnalyzer( Version.LUCENE_30 ) );
+        Map<String,Analyzer> analyzerPerField = new HashMap<>();
+        analyzerPerField.put("tokenized_title", new StandardAnalyzer() );
+        analyzerPerField.put("contents", new StandardAnalyzer());
 
+        PerFieldAnalyzerWrapper analyzer =
+            new PerFieldAnalyzerWrapper(new StandardAnalyzer(), analyzerPerField);
 
         File basePath = new File( baseDir );
         File luceneIndex = new File( basePath.getCanonicalPath() + File.separator + luceneIndexName );
@@ -102,9 +113,8 @@ public class MakeLuceneIndex
 
 
         // create the index
-        Directory indexDirectory = new MMapDirectory( luceneIndex, org.apache.lucene.store.NoLockFactory.getNoLockFactory() );
-        IndexWriter indexWriter = new IndexWriter( indexDirectory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED );
-
+        Directory indexDirectory = FSDirectory.open(FileSystems.getDefault().getPath(baseDir));
+        IndexWriter indexWriter = new IndexWriter(indexDirectory, new IndexWriterConfig(analyzer));
 
         Extractor wikidumpExtractor = new Extractor( basePath.getCanonicalPath() + File.separator + wikiDumpFile );
         wikidumpExtractor.setLinkSeparator( "_" );
@@ -115,6 +125,12 @@ public class MakeLuceneIndex
         int iSkippedPageCount = 0;
         long iStartTime = java.lang.System.nanoTime();
         long iTime = iStartTime;
+
+        FieldType fieldType = new FieldType();
+        fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+        fieldType.setTokenized(true);
+        fieldType.setStoreTermVectors(true);
+        fieldType.setStoreTermVectorPositions(true);
 
         while ( wikidumpExtractor.nextPage() )
         {
@@ -133,19 +149,26 @@ public class MakeLuceneIndex
             Document doc = new Document();
             ++iArticleCount;
 
+            doc.add(new StoredField("path", String.format("%d", iArticleCount)));
 
             wikidumpExtractor.setTitleSeparator( "_" );
-            doc.add( new Field( "title", wikidumpExtractor.getPageTitle( false ).toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
+            String title = wikidumpExtractor.getPageTitle( false ).toLowerCase();
+            doc.add( new Field( "title", title, fieldType) );
 
             wikidumpExtractor.setTitleSeparator( " " );
-            doc.add( new Field( "tokenized_title", wikidumpExtractor.getPageTitle( false ).toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
+            doc.add( new Field( "tokenized_title", wikidumpExtractor.getPageTitle( false ).toLowerCase(), fieldType ) );
 
-            doc.add( new Field( "categories", wikidumpExtractor.getPageCategories().toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
-            doc.add( new Field( "links", wikidumpExtractor.getPageLinks().toLowerCase(), Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES ) );
-            doc.add( new Field( "contents", wikidumpExtractor.getPageAbstract().toLowerCase(), Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.YES ) );
-
+            doc.add( new Field( "categories", wikidumpExtractor.getPageCategories().toLowerCase(), fieldType ) );
+            doc.add( new Field( "links", wikidumpExtractor.getPageLinks().toLowerCase(), fieldType ) );
+            doc.add( new Field( "contents", wikidumpExtractor.getPageAbstract().toLowerCase(), fieldType ) );
 
             indexWriter.addDocument( doc );
+
+            if (!writeToTextFilesDir.isEmpty()) {
+                String fileName = doc.get("title");
+                fileName = fileName.replace('/', '_');
+                writeToTextFile(writeToTextFilesDir, fileName, doc.get("contents"));
+            }
 
             if ( iArticleCount % 50000 == 0 )
             {
@@ -176,16 +199,25 @@ public class MakeLuceneIndex
         logger.log( "" );
 
         iTime = System.nanoTime();
-        logger.add( "Optimizing... " );
-        indexWriter.optimize();
-        logger.add( "done in " + NanoTimeFormatter.getS( System.nanoTime() - iTime ) + "s," );
-
-        iTime = System.nanoTime();
         logger.add( " closing..." );
         indexWriter.close();
         logger.log( " done in " + NanoTimeFormatter.getS( System.nanoTime() - iTime ) + "s." );
 
         logger.close();
         System.exit( 0 );
+    }
+
+    static void writeToTextFile(String dirName, String fileName, String contents) throws IOException {
+        File dir = new File(dirName);
+        if (!dir.exists()) {
+            dir.mkdir();
+        } else if (!dir.isDirectory()) {
+            throw new IOException(String.format("'%s' exists and is not a directory.", dirName));
+        } else {
+            Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(String.format("%s/%s", dirName, fileName)), "utf-8"));
+            writer.write(contents);
+            writer.close();
+        }
     }
 }
